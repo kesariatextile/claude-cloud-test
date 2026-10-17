@@ -1,0 +1,14 @@
+# personal data and secrets: never commit
+.env
+config/profile.yaml
+data/*
+!data/contacts.example.csv
+inbox/*
+!inbox/posts_to_comment.example.md
+output/
+
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/

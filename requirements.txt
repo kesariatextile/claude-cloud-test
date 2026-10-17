@@ -1,0 +1,4 @@
+anthropic>=1.15
+httpx2>=2.13
+PyYAML>=6.0
+python-dotenv>=1.0

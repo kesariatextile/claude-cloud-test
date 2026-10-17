@@ -1,0 +1,70 @@
+# Copy of this file lives at config/profile.yaml (created by `python -m career_agent init`).
+# Everything the agent writes is based ONLY on what you put here. It never
+# invents experience, so the more real detail you add, the better it writes.
+
+me:
+  name: "Your Name"
+  headline: "Data Analyst | SQL · Python · Power BI"
+  location: "Bengaluru, India"
+  linkedin_url: "https://www.linkedin.com/in/your-handle"
+  years_experience: 3
+  summary: |
+    2-4 lines about you: what you do, what you are good at, what you want next.
+  skills: [SQL, Python, Power BI, Excel, A/B testing, Stakeholder management]
+  achievements:            # real, specific results (numbers only if true)
+    - "Built a churn dashboard used every week by 40+ sales reps"
+    - "Automated a monthly report, saving the team ~2 days per month"
+  notice_period: "30 days"
+  current_ctc: "X LPA"
+  expected_ctc: "Y LPA"
+  resume_text: |
+    Paste the plain text of your resume here. Apply kits rewrite your
+    real experience in each job's language; they never add new claims.
+
+niche:
+  target_roles: ["Data Analyst", "Business Analyst", "Product Analyst"]
+  title_keywords: ["analyst", "analytics"]   # a job title must contain one of these
+  avoid_keywords: ["intern", "director", "principal"]
+  industries: ["Fintech", "SaaS", "E-commerce"]
+  locations: ["Bengaluru", "Bangalore", "Remote", "India"]  # job location must contain one
+  min_match_score: 70        # jobs scored below this are skipped
+  max_job_age_days: 30
+
+content:
+  post_days: [mon, tue, wed, thu, fri]
+  require_approval: true     # true = drafts wait for `post approve <id>`; false = fully automatic
+  language: "English"
+  tone: "conversational, practical, confident but humble"
+  themes:
+    - "A lesson from a real project I worked on"
+    - "A practical SQL / Python / dashboarding tip"
+    - "My opinion on a trend in fintech or SaaS analytics"
+    - "Something I learned during my job search"
+  story_bank:                # real experiences the agent may turn into posts
+    - "Found a pricing bug while reconciling dashboard numbers with finance data"
+    - "Convinced a manager to drop a vanity metric by showing it didn't predict retention"
+
+outreach:
+  daily_limit: 12            # people per day (connection notes + first messages + follow-ups)
+  follow_up_after_days: 5
+  is_premium: false          # free accounts: 200-char connection notes, premium: 300
+  goal: "get referred or considered for analyst roles in fintech / SaaS"
+  target_people: ["HR / Talent Acquisition leads", "Recruiters", "Founders or co-founders of startups"]
+
+jobs:
+  # Company job boards. Use the slug from the company's careers URL:
+  #   boards.greenhouse.io/<slug>, jobs.lever.co/<slug>, jobs.ashbyhq.com/<slug>
+  # Either "slug" or {slug: ..., name: "Display Name"}.
+  greenhouse: []
+  lever: []
+  ashby: []
+  career_pages: []           # any careers page URL; scraped with Firecrawl (needs FIRECRAWL_API_KEY)
+  #  - {url: "https://example.com/careers", name: "Example"}
+  daily_apply_kits: 5        # how many application kits to prepare per day
+  follow_up_after_days: 10   # report flags applications with no reply after this many days
+
+tracking:
+  imap_host: imap.gmail.com
+  smtp_host: smtp.gmail.com
+  lookback_days: 14
+  email_digest: false        # true = email yourself the daily plan + report
