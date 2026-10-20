@@ -5,6 +5,12 @@ description = "Daily LinkedIn posting, outreach drafts, job matching and applica
 requires-python = ">=3.10"
 dependencies = ["anthropic>=1.15", "httpx2>=2.13", "PyYAML>=6.0", "python-dotenv>=1.0"]
 
+[tool.setuptools]
+packages = ["career_agent"]
+
+[tool.setuptools.package-data]
+career_agent = ["data/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]

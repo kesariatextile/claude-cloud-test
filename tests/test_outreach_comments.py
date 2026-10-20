@@ -7,7 +7,7 @@ from tests.conftest import FakeLLM
 
 def _messages(prompt, schema):
     ids = [int(i) for i in re.findall(r"contact_id=(\d+)", prompt)]
-    return {"messages": [{"contact_id": i, "text": f"Hi {i}, " + "word " * 80} for i in ids]}
+    return {"messages": [{"contact_id": i, "text": f"Hi {i}, " + "word " * 80, "specific": i % 2 == 1} for i in ids]}
 
 
 def _add(conn, n):
@@ -90,9 +90,14 @@ def test_parse_inbox():
 
 def test_run_inbox_drafts_and_archives(cfg, conn):
     (cfg.inbox_dir / comments.INBOX_NAME).write_text(INBOX)
-    llm = FakeLLM(lambda p, s: {"comments": [{"index": 0, "options": ["A", "B"]}, {"index": 9, "options": ["x"]}]})
+    llm = FakeLLM(lambda p, s: {"comments": [
+        {"index": 0, "options": [{"type_id": 6, "text": "A"}, {"type_id": 3, "text": "B"}],
+         "recommended": 0, "reason": "own data"},
+        {"index": 9, "options": [{"type_id": 1, "text": "x"}], "recommended": 0, "reason": ""}]})
     drafts = comments.run_inbox(cfg, conn, llm)
-    assert [d["options"] for d in drafts] == [["A", "B"]]
+    assert drafts[0]["options"] == [{"type": "The receipt", "text": "A", "recommended": "own data"},
+                                    {"type": "Respectful disagree", "text": "B"}]
+    assert len(drafts) == 1
     assert (cfg.inbox_dir / comments.INBOX_NAME).read_text() == ""
     assert "Hiring is broken" in next((cfg.inbox_dir / "processed").iterdir()).read_text()
     assert comments.run_inbox(cfg, conn, llm) == []

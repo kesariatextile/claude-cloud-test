@@ -1,5 +1,3 @@
-import json
-import re
 from email.message import EmailMessage
 from types import SimpleNamespace
 
@@ -8,7 +6,7 @@ import pytest
 from career_agent import daily, jobs, report, tracker
 from career_agent.jobs import Job
 from career_agent.llm import LLM, LLMError
-from tests.conftest import FakeLLM
+from tests.conftest import FakeLLM, post_reply
 
 
 def _raw(subject, body, sender="no-reply@greenhouse.io", html=False, msg_id="<1@x>"):
@@ -94,15 +92,16 @@ def test_daily_run_survives_failures(cfg, conn):
     (cfg.inbox_dir / "posts_to_comment.md").write_text("Some post")
 
     def handler(prompt, schema):
-        if "2 alternative comments" in prompt:
-            return {"comments": [{"index": 0, "options": ["Opinion"]}]}
+        if "comment options" in prompt:
+            return {"comments": [{"index": 0, "options": [{"type_id": 4, "text": "Opinion"}],
+                                  "recommended": 0, "reason": "best"}]}
         if "today's LinkedIn post" in prompt:
-            return {"text": "Draft post"}
+            return post_reply("Draft post")
         raise AssertionError(prompt[:80])
 
     digest_path, report_path, errors = daily.run(cfg, conn, FakeLLM(handler), send_email=False)
     text = digest_path.read_text()
-    assert "waiting for your approval" in text and "1. Opinion" in text
+    assert "waiting for you" in text and "1. [Extend one line] Opinion" in text and "Post option 1: best" in text
     assert "Gamma — Analyst <script>" in text and "Email tracking is off" in text
     assert errors == [] and report_path.exists()
 

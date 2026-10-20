@@ -11,14 +11,18 @@ application's status from your inbox in one report.
 > match score deta hai, har job ke liye cover letter + form answers tayaar karta hai,
 > aur aapke email se pata karta hai ki kis application ka kya hua (interview,
 > rejection, offer). Sab ek daily to-do list aur ek HTML report mein milta hai.
+> Har post, comment aur message ek "humanizer" se guzarta hai jo AI wale shabd
+> aur nishaan hata kar 0-100 human score deta hai, aur `profile` command aapki
+> LinkedIn profile ko recruiter ki nazar se 100 mein se score karke rewrite karta hai.
 
 ## What runs automatically and what stays with you
 
 | Task | What the agent does | What you do |
 |---|---|---|
-| Daily LinkedIn post | Writes it from your real stories and publishes through LinkedIn's official API | Approve it (`post approve <id>`), or set `require_approval: false` for full auto |
-| 10-15 HR / founder messages | Finds people (web search) or imports your list, picks who to contact today, writes connection notes, first messages and follow-ups | Paste and send (~5 min), then `contacts mark <id> requested` |
-| Comments on their posts | Writes 2 opinionated comment options per post | Paste the posts you want to engage with into `inbox/posts_to_comment.md`, then post a comment |
+| Daily LinkedIn post | Writes it from your real stories on the best of 21 hook formulas, humanizes and scores it, and publishes through LinkedIn's official API | Approve it (`post approve <id>`), or set `require_approval: false` for full auto |
+| 10-15 HR / founder messages | Finds people (web search) or imports your list, picks who to contact today, writes the invite note, first message and exactly two follow-ups, and flags messages with no specific reason behind them | Paste and send (~5 min), then `contacts mark <id> requested` |
+| Comments on their posts | Writes 2 comment options of different types (out of 9) per post, recommends one, warns if you comment on the same person too often | Paste the posts you want to engage with into `inbox/posts_to_comment.md`, then post a comment |
+| Profile | Scores your profile out of 100 the way a recruiter reads it, rewrites the sections that lose points, and re-scores the rewrite | Paste your profile into `inbox/profile.md`, then paste the rewrites into LinkedIn |
 | Job applications | Finds jobs (Greenhouse, Lever, Ashby boards, any careers page via Firecrawl), scores the fit, writes a cover letter, tailored resume bullets, form answers and a referral message | Open the apply link and submit (~2 min per job) |
 | Progress report | Reads job emails, updates each application (applied, assessment, interview, rejected, offer), flags follow-ups | Read `output/report.html` |
 
@@ -33,6 +37,30 @@ application's status from your inbox in one report.
   their terms). The agent uses Firecrawl for company careers pages instead.
 - **Application forms have CAPTCHAs and custom questions**, and recruiters spot
   mass auto-applies. The agent does all the writing; you click Submit.
+
+## How the writing stays human
+
+Every post, comment, message and profile rewrite goes through `career_agent/humanize.py`:
+
+1. **Prevention:** Claude is told up front which stock words ("leverage",
+   "delve", "seamless"...), punctuation and sentence shapes to avoid.
+2. **Cleaning:** invisible characters, em dashes, curly quotes and 113 stock
+   words and phrases are replaced. Hindi/Devanagari text and emoji keep the
+   zero-width joiners they need, and real terms like "customer journey" or
+   "financial leverage" are never touched. Add your own words to
+   `content.keep_words`.
+3. **Scoring:** posts get a 0-100 human score from five checks (sentence-length
+   variety, specificity, stock-word density, typographic fingerprint, voice).
+   These are local heuristics, not GPTZero or any other detector.
+4. **One targeted rewrite:** if a post still has a structural tell ("It's not
+   just X, it's Y", rule-of-three lists, uniform sentence length) or doesn't
+   pass, Claude rewrites only those issues and the better-scoring version is kept.
+
+Posts never invent numbers. Where a number would help and you haven't given
+one, the draft says `{{your number}}`, and such a draft can't be approved or
+published until you fill it in.
+
+Try it on any text: `python -m career_agent humanize draft.txt`.
 
 ## Setup (about 30 minutes, once)
 
@@ -69,6 +97,13 @@ python -m career_agent init          # creates config/profile.yaml, .env, inbox 
    emails (by keyword) are sent to Claude, and only their first ~3,000 characters.
 6. **Contacts**: `python -m career_agent contacts import my_list.csv` (columns as in
    `data/contacts.example.csv`) and/or `python -m career_agent contacts discover --count 20`.
+   Add a note per contact (a post of theirs, a launch, an opening): messages with a
+   specific reason get replies, and the digest flags the ones without one.
+7. **Profile check**: paste your profile into `inbox/profile.md` (the template
+   shows what to copy) and run `python -m career_agent profile`. The review lands
+   in `output/profile-review.md`: the score per item, rewrites in the order that
+   gains the most points, and the settings only you can change (Open to Work,
+   featured, banner). Re-run it after you update the profile.
 
 ## Daily use
 
@@ -107,7 +142,7 @@ The computer must be on at that time. If it isn't, run `daily` when you start wo
 | Command | What it does |
 |---|---|
 | `post generate [--theme "..."]` | Draft a post now |
-| `post list` / `post show <id>` | See drafts and published posts |
+| `post list` / `post show <id>` | See drafts and published posts (`show` includes the hooks considered and the human score) |
 | `post edit <id> --file new.txt` | Replace a draft's text with your edit |
 | `post approve <id>` / `post reject <id>` | Approve for the next run / discard |
 | `post publish <id>` | Publish right now |
@@ -122,6 +157,8 @@ The computer must be on at that time. If it isn't, run `daily` when you start wo
 | `jobs kit <id>` | Write the application kit for a job |
 | `jobs mark <id> <status> [--note ...]` | e.g. `applied`, `interview`, `rejected`, `offer`, `withdrawn` |
 | `track` | Read job emails and update statuses |
+| `profile [--file profile.txt]` | Score your LinkedIn profile out of 100 and rewrite what loses points |
+| `humanize [file] [--check]` | Clean any text of AI tells and score it |
 | `report` | Rebuild `output/report.html` |
 
 All commands are run as `python -m career_agent <command>`.
@@ -141,6 +178,22 @@ Everything stays on your computer in `data/agent.db` (SQLite), `output/` and
 `inbox/`, which are git-ignored together with `.env` and `config/profile.yaml`.
 Text is sent only to the Claude API (for writing and classifying), Firecrawl (the
 careers page URLs you configure) and LinkedIn (your posts).
+
+## Messaging cadence
+
+Per contact: an invite note that asks for nothing, a first message after they
+accept that gives something before it asks, a follow-up after 4 days with
+something new, a last message 6 days later that closes the loop, then nothing.
+The daily limit is capped at 20 because LinkedIn throttles accounts that send
+more invites than that.
+
+## Credits
+
+The humanizer lexicon and checks, the 21 hook formulas, the comment types, the
+messaging cadence and the profile rubric are adapted from
+[linkedin-agent-skill](https://github.com/Jakeschincariol/linkedin-agent-skill)
+by Jake Schincariol (MIT, see `career_agent/data/THIRD_PARTY_NOTICE.txt`). The
+profile rubric was reworked for job seekers.
 
 ## Development
 

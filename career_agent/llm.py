@@ -9,6 +9,8 @@ from typing import Any
 import anthropic
 import yaml
 
+from .humanize import style_rules
+
 DEFAULT_MODEL = "claude-opus-5-5"
 # Server-side fallback: if the model declines a request for policy reasons, the
 # API retries it on Anthropic's recommended fallback model inside the same call.
@@ -34,6 +36,7 @@ def profile_system_prompt(cfg) -> str:
         "- Sound like a real, thoughtful professional, not a marketer. No buzzword salad, no "
         "fake enthusiasm, no 'I hope this message finds you well'.\n"
         "- LinkedIn does not render Markdown, so write plain text (no **bold**, no # headings).\n\n"
+        f"{style_rules()}\n\n"
         f"<profile>\n{profile}</profile>"
     )
 

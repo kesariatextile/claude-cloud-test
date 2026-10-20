@@ -5,6 +5,7 @@ data/*
 !data/contacts.example.csv
 inbox/*
 !inbox/posts_to_comment.example.md
+!inbox/profile.example.md
 output/
 
 __pycache__/

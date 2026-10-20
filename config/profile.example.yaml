@@ -35,18 +35,20 @@ content:
   require_approval: true     # true = drafts wait for `post approve <id>`; false = fully automatic
   language: "English"
   tone: "conversational, practical, confident but humble"
-  themes:
-    - "A lesson from a real project I worked on"
-    - "A practical SQL / Python / dashboarding tip"
-    - "My opinion on a trend in fintech or SaaS analytics"
-    - "Something I learned during my job search"
+  themes:                    # rotated one per post; leave out to use Proof / Opinion / Teach / Story
+    - "Proof: a real result from a project I worked on, with the number"
+    - "Opinion: a position on fintech or SaaS analytics that some people would disagree with"
+    - "Teach: a practical SQL / Python / dashboarding tip"
+    - "Story: a moment at work that cost something or taught me something"
   story_bank:                # real experiences the agent may turn into posts
     - "Found a pricing bug while reconciling dashboard numbers with finance data"
     - "Convinced a manager to drop a vanity metric by showing it didn't predict retention"
+  keep_words: []             # words the humanizer must never replace, e.g. ["ecosystem", "robust"]
 
 outreach:
-  daily_limit: 12            # people per day (connection notes + first messages + follow-ups)
-  follow_up_after_days: 5
+  daily_limit: 12            # people per day (invites + messages + follow-ups); capped at 20
+  follow_up_after_days: 4    # first follow-up after no reply
+  close_loop_after_days: 6   # the last follow-up, 6 days after the first one; then it stops
   is_premium: false          # free accounts: 200-char connection notes, premium: 300
   goal: "get referred or considered for analyst roles in fintech / SaaS"
   target_people: ["HR / Talent Acquisition leads", "Recruiters", "Founders or co-founders of startups"]

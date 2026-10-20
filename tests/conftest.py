@@ -18,6 +18,12 @@ PROFILE = {
 }
 
 
+def post_reply(text, chosen=17):
+    """What Claude returns for a post-generation prompt."""
+    return {"hooks": [{"id": chosen, "line": text.splitlines()[0]}, {"id": 1, "line": "Everyone says X."},
+                      {"id": 5, "line": "3 things."}], "chosen_id": chosen, "reason": "numbers are mine", "text": text}
+
+
 class FakeLLM:
     """Stands in for career_agent.llm.LLM; `handler(prompt, schema)` returns the parsed JSON."""
 

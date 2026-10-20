@@ -56,6 +56,13 @@ def collect(conn, today: date | None = None, follow_up_days: int = 10) -> dict:
         elif j["status"] == "kit_ready":
             attention.append(f"{name}: application kit ready. Apply.")
 
+    profile = conn.execute("SELECT at, score, rewritten_score FROM profile_scores ORDER BY id DESC LIMIT 1").fetchone()
+    if profile is None:
+        attention.append("Recruiters read your profile before your messages: paste it into inbox/profile.md "
+                         "and run `python -m career_agent profile`.")
+    elif profile["at"] < (today - timedelta(days=30)).isoformat():
+        attention.append(f"Your profile was last checked on {profile['at'][:10]}. Re-run `profile` after your updates.")
+
     contacts = {r["status"]: r["n"] for r in conn.execute("SELECT status, COUNT(*) n FROM contacts GROUP BY status")}
     return {
         "today": today,
@@ -76,6 +83,7 @@ def collect(conn, today: date | None = None, follow_up_days: int = 10) -> dict:
         "outreach_week": conn.execute(
             "SELECT COUNT(*) FROM outreach_messages WHERE sent_at >= ?", (week_ago,)).fetchone()[0],
         "contacts": contacts,
+        "profile": profile,
     }
 
 
@@ -86,6 +94,13 @@ def _pct(part: int, whole: int) -> str:
 def _tile(label: str, value, note: str = "") -> str:
     note_html = f'<div class="note">{escape(note)}</div>' if note else ""
     return f'<div class="tile"><div class="label">{escape(label)}</div><div class="value">{escape(str(value))}</div>{note_html}</div>'
+
+
+def _profile_tile(row) -> str:
+    if row is None:
+        return _tile("Profile score", "–", "run `python -m career_agent profile`")
+    return _tile("Profile score", f"{row['score']}/100",
+                 f"{row['rewritten_score']}/100 with the suggested rewrites · {row['at'][:10]}")
 
 
 def _status(status: str) -> str:
@@ -101,8 +116,10 @@ def render_html(data: dict, token_days_left: int | None = None) -> str:
         _tile("Response rate", _pct(data["replied"], total), f"{data['replied']} of {total} replied"),
         _tile("Interviews", data["interviews"], f"{_pct(data['interviews'], total)} of applications"),
         _tile("Offers", data["offers"]),
+        _tile("Ready to apply", sum(1 for j in data["jobs"] if j["status"] == "kit_ready"), "application kits prepared"),
         _tile("Posts published", data["posts_month"], "last 30 days"),
         _tile("Messages sent", data["outreach_week"], f"last 7 days · {data['contacts'].get('replied', 0)} replied so far"),
+        _profile_tile(data["profile"]),
     ])
 
     peak = max((n for _, n in data["pipeline"]), default=0) or 1
@@ -125,10 +142,7 @@ def render_html(data: dict, token_days_left: int | None = None) -> str:
         f"{escape(e['title'])} → {escape(LABELS.get(e['kind'], e['kind']))}"
         f"{' · ' + escape(e['detail']) if e['detail'] else ''} <span class='muted'>({escape(e['origin'])})</span></li>"
         for e in data["events"]) or "<li class='muted'>No activity yet.</li>"
-    posts = "".join(
-        f"<li><span class='when'>{escape((p['published_at'] or p['created_at'])[:10])}</span> "
-        f"{_status_text(p)} {escape(p['text'].splitlines()[0][:110])}</li>"
-        for p in data["posts"]) or "<li class='muted'>No posts yet.</li>"
+    posts = "".join(_post_item(p) for p in data["posts"]) or "<li class='muted'>No posts yet.</li>"
     contact_rows = "".join(
         f"<tr><td>{escape(s.replace('_', ' ').capitalize())}</td><td class='num'>{data['contacts'].get(s, 0)}</td></tr>"
         for s in ("new", "requested", "connected", "messaged", "replied", "not_interested"))
@@ -162,7 +176,8 @@ h1 {{ font-size: 24px; margin: 0 0 4px; }}
 h2 {{ font-size: 16px; margin: 0 0 12px; }}
 .sub, .muted, .note, .when {{ color: var(--muted); }}
 .card {{ background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-top: 16px; }}
-.kpis {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 16px; }}
+.kpis {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }}
+@media (max-width: 760px) {{ .kpis {{ grid-template-columns: repeat(2, 1fr); }} }}
 .tile {{ background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }}
 .tile .label {{ color: var(--ink-2); font-size: 13px; }}
 .tile .value {{ font-size: 28px; font-weight: 600; }}
@@ -244,6 +259,13 @@ def _job_row(j: dict) -> str:
             f"<td class='num'>{dash if j['score'] is None else j['score']}</td></tr>")
 
 
+def _post_item(p: dict) -> str:
+    score = p.get("human_score")
+    score_html = f" <span class='muted'>(human score {score:.0f})</span>" if score is not None else ""
+    return (f"<li><span class='when'>{escape((p['published_at'] or p['created_at'])[:10])}</span> "
+            f"{_status_text(p)} {escape(p['text'].splitlines()[0][:110])}{score_html}</li>")
+
+
 def _status_text(post: dict) -> str:
     if post["status"] == "published" and post["linkedin_urn"]:
         return f"<a href='{escape(post_url(post['linkedin_urn']))}'>Published</a> ·"
@@ -263,20 +285,28 @@ def digest_markdown(today: date, post_lines, outreach_drafts, comment_drafts, ki
     out += [f"## 2. Messages to send ({len(outreach_drafts)})", ""]
     if not outreach_drafts:
         out += ["No drafts. Add contacts with `contacts import` or `contacts discover`.", ""]
-    labels = {"connect": "Connection request note", "dm": "First message", "follow_up": "Follow-up"}
+    labels = {"connect": "Connection request note", "dm": "First message", "follow_up": "Follow-up",
+              "close_loop": "Last follow-up (closes the loop)"}
     for d in outreach_drafts:
         link = d.get("linkedin_url") or "(find their profile on LinkedIn)"
         mark = "requested" if d["kind"] == "connect" else "messaged"
         out += [f"### {d['name']} — {d.get('title') or ''}, {d.get('company') or ''}",
-                f"{labels[d['kind']]} · {link}", "", "> " + d["text"].replace("\n", "\n> "), "",
-                f"After sending: `python -m career_agent contacts mark {d['contact_id']} {mark}`", ""]
+                f"{labels[d['kind']]} · {link}", "", "> " + d["text"].replace("\n", "\n> "), ""]
+        if d.get("specific") == 0:
+            out += ["No specific reason to contact them yet: add a note (a post of theirs, a launch, an "
+                    "opening) to the contact, or skip them today.", ""]
+        out += [f"After sending: `python -m career_agent contacts mark {d['contact_id']} {mark}`", ""]
     out += [f"## 3. Comments to post ({len(comment_drafts)})", ""]
     if not comment_drafts:
         out += ["Paste posts you want to comment on into `inbox/posts_to_comment.md` (see the example file).", ""]
     for c in comment_drafts:
         out += [f"### {c.get('author') or 'Post'} · {c.get('url') or ''}", ""]
-        out += [f"{i}. {opt}" for i, opt in enumerate(c["options"], 1)] + [""]
-    out += [f"## 4. Jobs to apply to ({len(kits)} new kits)", ""]
+        for i, opt in enumerate(c["options"], 1):
+            out.append(f"{i}. [{opt['type']}] {opt['text']}")
+        best = next((f"Post option {i}: {o['recommended']}" for i, o in enumerate(c["options"], 1)
+                     if o.get("recommended")), None)
+        out += [""] + ([best, ""] if best else []) + ([c["note"], ""] if c.get("note") else [])
+    out += [f"## 4. Jobs ready to apply to ({len(kits)})", ""]
     if scan_summary:
         out.append(f"Scanned {scan_summary['found']} openings, {scan_summary['new']} new matches, "
                    f"{scan_summary['shortlisted']} shortlisted.")

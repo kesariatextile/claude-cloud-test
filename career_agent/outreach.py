@@ -1,5 +1,9 @@
 """HR / founder outreach: keep a contact list, pick 10-15 people a day and draft
-personalised connection notes, first messages and follow-ups for you to send."""
+personalised connection notes, first messages and follow-ups for you to send.
+
+The cadence follows linkedin-agent-skill's li-dm (MIT): an invite note that asks
+for nothing, a first message that gives before it asks, then exactly two
+follow-ups (+4 days with something new, +10 days to close the loop), then stop."""
 
 from __future__ import annotations
 
@@ -8,12 +12,23 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from . import db
+from .humanize import clean
 from .llm import schema_object
 
 STATUSES = ["new", "requested", "connected", "messaged", "replied", "not_interested"]
 # Marking a contact with one of these statuses also marks the matching draft as sent.
-_SENT_KIND = {"requested": ("connect",), "messaged": ("dm", "follow_up")}
+_SENT_KIND = {"requested": ("connect",), "messaged": ("dm", "follow_up", "close_loop")}
 STALE_DRAFT_DAYS = 3
+MAX_DAILY = 20  # LinkedIn throttles accounts that send more invites than this
+KIND_RULES = {
+    "connect": "connection request note: one specific reference to them + one line on who I am + NO ask",
+    "dm": "first message after they accepted: 2-4 sentences, pick up the specific thing from the invite, "
+          "give something first (a sharp observation about their product, data or hiring from my field), "
+          "then ONE small ask (a 15-minute chat, who to talk to about a role, or a referral if an opening fits); "
+          "no calendar link, no resume dump",
+    "follow_up": "first follow-up: add something genuinely new; never 'just bumping this' or 'following up'",
+    "close_loop": "last message: say kindly that I won't follow up again and mean it, leave the door open",
+}
 
 
 def upsert_contact(conn, c: dict) -> bool:
@@ -79,25 +94,31 @@ def _drop_stale_drafts(conn) -> None:
 
 
 def select_for_today(cfg, conn, limit: int | None = None) -> list[tuple[dict, str]]:
-    """Pick who to contact today and how: first DMs to new connections, then
-    follow-ups, then fresh connection requests."""
-    limit = limit or int(cfg.outreach.get("daily_limit", 12))
-    follow_up_days = int(cfg.outreach.get("follow_up_after_days", 5))
+    """Pick who to contact today and how: first messages to new connections,
+    then follow-ups, then fresh connection requests."""
+    limit = min(limit or int(cfg.outreach.get("daily_limit", 12)), MAX_DAILY)
+    follow_up_days = int(cfg.outreach.get("follow_up_after_days", 4))
+    close_loop_days = int(cfg.outreach.get("close_loop_after_days", 6))
     _drop_stale_drafts(conn)
     # Unsent drafts from earlier days still count toward today's limit.
     limit -= conn.execute("SELECT COUNT(*) FROM outreach_messages WHERE sent_at IS NULL").fetchone()[0]
-    cutoff = (datetime.now() - timedelta(days=follow_up_days)).isoformat(timespec="seconds")
-    no_pending = "AND NOT EXISTS (SELECT 1 FROM outreach_messages m WHERE m.contact_id=c.id AND m.sent_at IS NULL)"
+
+    def ago(days):
+        return (datetime.now() - timedelta(days=days)).isoformat(timespec="seconds")
+
+    no_pending = "NOT EXISTS (SELECT 1 FROM outreach_messages m WHERE m.contact_id=c.id AND m.sent_at IS NULL)"
+    sent = "(SELECT COUNT(*) FROM outreach_messages m WHERE m.contact_id=c.id AND m.sent_at IS NOT NULL AND m.kind='{}')"
     queries = [
-        ("dm", f"SELECT * FROM contacts c WHERE status='connected' {no_pending} ORDER BY last_action_at"),
-        ("follow_up", f"""SELECT * FROM contacts c WHERE status='messaged' AND last_action_at < ? {no_pending}
-             AND (SELECT COUNT(*) FROM outreach_messages m WHERE m.contact_id=c.id AND m.kind='follow_up') = 0
-             ORDER BY last_action_at""", ),
-        ("connect", f"SELECT * FROM contacts c WHERE status='new' {no_pending} ORDER BY id"),
+        ("dm", "status='connected'", ()),
+        ("follow_up", f"status='messaged' AND last_action_at < ? AND {sent.format('follow_up')} = 0",
+         (ago(follow_up_days),)),
+        ("close_loop", f"status='messaged' AND last_action_at < ? AND {sent.format('follow_up')} = 1 "
+                       f"AND {sent.format('close_loop')} = 0", (ago(close_loop_days),)),
+        ("connect", "status='new'", ()),
     ]
     picked: list[tuple[dict, str]] = []
-    for kind, sql in queries:
-        params = (cutoff,) if kind == "follow_up" else ()
+    for kind, where, params in queries:
+        sql = f"SELECT * FROM contacts c WHERE {where} AND {no_pending} ORDER BY coalesce(last_action_at, ''), id"
         for row in conn.execute(sql, params):
             if len(picked) >= limit:
                 return picked
@@ -109,7 +130,7 @@ def draft(cfg, conn, llm, picked: list[tuple[dict, str]]) -> list[dict]:
     if not picked:
         return []
     note_limit = 300 if cfg.outreach.get("is_premium") else 200
-    limits = {"connect": note_limit, "dm": 600, "follow_up": 350}
+    limits = {"connect": note_limit, "dm": 500, "follow_up": 350, "close_loop": 300}
     lines = []
     for contact, kind in picked:
         previous = [r["text"] for r in conn.execute(
@@ -122,27 +143,29 @@ def draft(cfg, conn, llm, picked: list[tuple[dict, str]]) -> list[dict]:
         )
     prompt = (
         "Write one LinkedIn message per contact below.\n"
-        "Types: connect = connection request note; dm = first message after they accepted; "
-        "follow_up = polite nudge after no reply (add something new, don't guilt-trip).\n"
-        f"My goal: {cfg.outreach.get('goal', 'get referred or considered for roles in my niche')}.\n"
-        "Rules: address them by first name; mention something specific about them or their "
-        "company when the notes give you something; one clear, low-effort ask (e.g. 'open to a "
-        "10-minute chat?' or 'could you point me to the right person?'); never paste a whole "
-        "resume; never claim we met; stay within the character limit.\n\n" + "\n".join(lines)
+        + "".join(f"- {kind}: {rule}\n" for kind, rule in KIND_RULES.items())
+        + f"My goal: {cfg.outreach.get('goal', 'get referred or considered for roles in my niche')}.\n"
+        "Rules: first name only; never fabricate a mutual connection, a shared school, a meeting, or having "
+        "read something that is not in the notes; never open with 'I hope this message finds you well'; "
+        "stay within the character limit. Set specific=true only if the notes give a real, current reason "
+        "to contact this person (a post, a launch, an opening, a mutual interest); otherwise false.\n\n"
+        + "\n".join(lines)
     )
-    msg = schema_object({"contact_id": {"type": "integer"}, "text": {"type": "string"}})
+    msg = schema_object({"contact_id": {"type": "integer"}, "text": {"type": "string"},
+                         "specific": {"type": "boolean"}})
     result = llm.json(prompt, schema_object({"messages": {"type": "array", "items": msg}}))
     kinds = {c["id"]: (c, k) for c, k in picked}
+    keep = cfg.content.get("keep_words") or []
     drafts = []
     for m in result["messages"]:
         if m["contact_id"] not in kinds:
             continue
-        contact, kind = kinds[m["contact_id"]]
-        text = _fit(m["text"].strip(), limits[kind])
+        contact, kind = kinds.pop(m["contact_id"])
+        text = _fit(clean(m["text"], keep)[0], limits[kind])
         conn.execute(
-            "INSERT INTO outreach_messages (contact_id, kind, text, created_at) VALUES (?, ?, ?, ?)",
-            (contact["id"], kind, text, db.now()))
-        drafts.append({"contact": contact, "kind": kind, "text": text})
+            "INSERT INTO outreach_messages (contact_id, kind, text, created_at, specific) VALUES (?, ?, ?, ?, ?)",
+            (contact["id"], kind, text, db.now(), int(m["specific"])))
+        drafts.append({"contact": contact, "kind": kind, "text": text, "specific": m["specific"]})
     conn.commit()
     return drafts
 
@@ -175,7 +198,7 @@ def mark(conn, contact_id: int, status: str) -> None:
 
 def pending_drafts(conn) -> list[dict]:
     rows = conn.execute(
-        """SELECT m.id, m.kind, m.text, c.id AS contact_id, c.name, c.title, c.company, c.linkedin_url
+        """SELECT m.id, m.kind, m.text, m.specific, c.id AS contact_id, c.name, c.title, c.company, c.linkedin_url
            FROM outreach_messages m JOIN contacts c ON c.id = m.contact_id
            WHERE m.sent_at IS NULL ORDER BY m.id""")
     return [dict(r) for r in rows]

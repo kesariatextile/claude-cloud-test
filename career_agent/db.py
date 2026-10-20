@@ -87,7 +87,21 @@ CREATE TABLE IF NOT EXISTS emails_seen (
     category TEXT,
     job_id INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS profile_scores (
+    id INTEGER PRIMARY KEY,
+    at TEXT NOT NULL,
+    score INTEGER NOT NULL,
+    rewritten_score INTEGER,
+    items TEXT NOT NULL                        -- JSON: per-item points and reasons
+);
 """
+
+# Columns added after the first release; connect() adds any that an older database lacks.
+ADDED_COLUMNS = {
+    "posts": {"hook": "TEXT", "hook_options": "TEXT", "human_score": "REAL", "verdict": "TEXT"},
+    "outreach_messages": {"specific": "INTEGER"},
+}
 
 
 def connect(path: Path | str) -> sqlite3.Connection:
@@ -95,6 +109,11 @@ def connect(path: Path | str) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.executescript(SCHEMA)
+    for table, columns in ADDED_COLUMNS.items():
+        have = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+        for name, kind in columns.items():
+            if name not in have:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {kind}")
     return conn
 
 

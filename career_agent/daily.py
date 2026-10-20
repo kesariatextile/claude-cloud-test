@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import smtplib
 from datetime import date
@@ -60,9 +59,7 @@ def run(cfg, conn, llm, send_email: bool | None = None):
 
     kits = [f"{r['company']} — {r['title']} (match {r['score']}) · apply: {r['apply_url'] or r['url']} · kit: {r['kit_path']}"
             for r in conn.execute("SELECT * FROM jobs WHERE status='kit_ready' ORDER BY score DESC")]
-    comment_drafts = [
-        {"author": r["author"], "url": r["post_url"], "options": json.loads(r["options"])}
-        for r in conn.execute("SELECT * FROM comment_drafts WHERE created_at >= ? ORDER BY id", (db.today(),))]
+    comment_drafts = comments.todays_drafts(conn)
     digest = digest_markdown(date.today(), post_lines, outreach.pending_drafts(conn), comment_drafts, kits,
                              updates, scan_summary, data["attention"], errors)
     folder = cfg.output_dir / "digests"

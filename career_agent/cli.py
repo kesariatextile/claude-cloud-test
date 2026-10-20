@@ -8,7 +8,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from . import comments, db, jobs, outreach, posts, tracker
+from . import comments, db, humanize, jobs, outreach, posts, profile, tracker
 from .config import Config, ConfigError
 from .linkedin import LinkedInClient, LinkedInError, authorize, post_url
 from .llm import LLM, LLMError
@@ -19,7 +19,8 @@ TEMPLATES = Path(__file__).resolve().parent.parent
 def cmd_init(args) -> None:
     root = Path(args.home or Path.cwd())
     copies = [("config/profile.example.yaml", "config/profile.yaml"), (".env.example", ".env"),
-              ("inbox/posts_to_comment.example.md", "inbox/posts_to_comment.md")]
+              ("inbox/posts_to_comment.example.md", "inbox/posts_to_comment.md"),
+              ("inbox/profile.example.md", "inbox/profile.md")]
     for src, dst in copies:
         target = root / dst
         if target.exists():
@@ -105,10 +106,20 @@ def cmd_post(args) -> None:
 
 
 def _show_post(conn, post_id: int) -> None:
+    import json
+
     r = conn.execute("SELECT * FROM posts WHERE id=?", (post_id,)).fetchone()
     if r is None:
         sys.exit(f"No post #{post_id}")
-    print(f"Post #{r['id']} [{r['status']}] theme: {r['theme']}\n{'-' * 60}\n{r['text']}")
+    print(f"Post #{r['id']} [{r['status']}] theme: {r['theme']}\n{posts.summary(r)}\n{'-' * 60}\n{r['text']}\n{'-' * 60}")
+    extra = json.loads(r["hook_options"] or "{}")
+    if extra.get("hooks"):
+        print("Other hooks considered:")
+        for h in extra["hooks"]:
+            print(f"  #{h['id']} {h['name']}: {h['line']}")
+        print(f"Why this one: {extra.get('reason', '')}")
+    if extra.get("tells"):
+        print("Still worth a manual look: " + "; ".join(extra["tells"]))
 
 
 def _need_id(args) -> int:
@@ -143,7 +154,8 @@ def cmd_outreach(args) -> None:
     drafts = outreach.draft(cfg, conn, _llm(cfg), outreach.select_for_today(cfg, conn, args.limit))
     for d in drafts:
         c = d["contact"]
-        print(f"\n[{d['kind']}] #{c['id']} {c['name']} ({c.get('company') or ''}) {c.get('linkedin_url') or ''}\n{d['text']}")
+        flag = "" if d["specific"] else "  (no specific reason yet: add a note or skip)"
+        print(f"\n[{d['kind']}] #{c['id']} {c['name']} ({c.get('company') or ''}) {c.get('linkedin_url') or ''}{flag}\n{d['text']}")
     print(f"\n{len(drafts)} drafts. After sending, mark each: contacts mark <id> requested|messaged")
 
 
@@ -158,7 +170,11 @@ def cmd_comment(args) -> None:
     for d in drafted:
         print(f"\n{d.get('author') or 'Post'} {d.get('url') or ''}")
         for i, option in enumerate(d["options"], 1):
-            print(f"  {i}. {option}")
+            print(f"  {i}. [{option['type']}] {option['text']}")
+            if option.get("recommended"):
+                print(f"     ^ recommended: {option['recommended']}")
+        if d.get("note"):
+            print(f"  note: {d['note']}")
 
 
 # ---- jobs / tracking ----------------------------------------------------------------
@@ -188,6 +204,31 @@ def cmd_jobs(args) -> None:
         jobs.update_status(conn, int(args.arg), args.status_value, args.note or "", origin="manual")
         conn.commit()
         print("Saved.")
+
+
+def cmd_profile(args) -> None:
+    cfg, conn = _setup(args)
+    source = Path(args.file) if args.file else cfg.inbox_dir / profile.INBOX_NAME
+    if not source.exists() or not source.read_text(encoding="utf-8").strip():
+        sys.exit(f"Paste your LinkedIn profile into {source} first (see inbox/profile.example.md).")
+    path, before, after = profile.run(cfg, conn, _llm(cfg), source.read_text(encoding="utf-8"))
+    print(f"Profile score {before}/100, {after}/100 with the rewrites. Review: {path}")
+
+
+def cmd_humanize(args) -> None:
+    text = Path(args.file).read_text(encoding="utf-8") if args.file else sys.stdin.read()
+    cleaned, report = humanize.clean(text)
+    if not args.check:
+        print(cleaned)
+    print(f"\n--- {report['removed']} machine artefacts removed", file=sys.stderr)
+    for h in report["lexical"]:
+        print(f"    {h['count']}x {h['find']} -> {h['replace']}", file=sys.stderr)
+    for t in report["structures"]:
+        print(f"    rewrite: {t['name']}. {t['fix']}", file=sys.stderr)
+    result = humanize.score(cleaned)
+    if result:
+        checks = ", ".join(f"{k.lower()} {v:.0f}" for k, v in result["checks"].items())
+        print(f"--- human score {result['score']:.0f} {result['verdict']} ({checks})", file=sys.stderr)
 
 
 def cmd_track(args) -> None:
@@ -243,6 +284,15 @@ def build_parser() -> argparse.ArgumentParser:
     j.set_defaults(func=cmd_jobs)
 
     sub.add_parser("track", help="read job emails and update application status").set_defaults(func=cmd_track)
+
+    pr = sub.add_parser("profile", help="score your LinkedIn profile out of 100 and rewrite what loses points")
+    pr.add_argument("--file", help="profile text (default: inbox/profile.md)")
+    pr.set_defaults(func=cmd_profile)
+
+    h = sub.add_parser("humanize", help="clean any text of AI tells and score it")
+    h.add_argument("file", nargs="?", help="text file (default: stdin)")
+    h.add_argument("--check", action="store_true", help="only report, don't print the cleaned text")
+    h.set_defaults(func=cmd_humanize)
     return p
 
 

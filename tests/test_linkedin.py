@@ -7,7 +7,7 @@ import pytest
 
 from career_agent import posts
 from career_agent.linkedin import LinkedInClient, LinkedInError, candidate_versions, to_little_text
-from tests.conftest import FakeLLM
+from tests.conftest import FakeLLM, post_reply
 
 
 def test_little_text_escapes_reserved_and_keeps_hashtags():
@@ -77,10 +77,10 @@ class FakeClient:
 
 
 def test_daily_post_waits_for_approval_then_publishes(cfg, conn):
-    llm = FakeLLM(lambda prompt, schema: {"text": "Hook line\n\nBody #SQL"})
+    llm = FakeLLM(lambda prompt, schema: post_reply("Hook line\n\nBody #SQL"))
     client = FakeClient()
     lines = posts.run_daily(cfg, conn, llm, lambda: client)
-    assert "waiting for your approval" in lines[0] and not client.published
+    assert "waiting for you" in lines[0] and "Time Anchor" in lines[0] and not client.published
     # A second run does not generate another draft.
     posts.run_daily(cfg, conn, llm, lambda: client)
     assert conn.execute("SELECT COUNT(*) FROM posts").fetchone()[0] == 1
@@ -94,14 +94,14 @@ def test_daily_post_waits_for_approval_then_publishes(cfg, conn):
 def test_daily_post_auto_publishes_without_approval(cfg, conn):
     cfg.data["content"]["require_approval"] = False
     client = FakeClient()
-    posts.run_daily(cfg, conn, FakeLLM(lambda p, s: {"text": "Auto post"}), lambda: client)
+    posts.run_daily(cfg, conn, FakeLLM(lambda p, s: post_reply("Auto post")), lambda: client)
     assert client.published == ["Auto post"]
     row = conn.execute("SELECT status, linkedin_urn FROM posts").fetchone()
     assert (row["status"], row["linkedin_urn"]) == ("published", "urn:li:share:1")
 
 
 def test_theme_rotates(cfg, conn):
-    llm = FakeLLM(lambda p, s: {"text": "x"})
+    llm = FakeLLM(lambda p, s: post_reply("x"))
     posts.generate(cfg, conn, llm)
     posts.generate(cfg, conn, llm)
     assert [r["theme"] for r in conn.execute("SELECT theme FROM posts ORDER BY id")] == ["Theme A", "Theme B"]

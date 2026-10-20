@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "total": 100,
+  "note": "Job-seeker version of the 100-point profile rubric from linkedin-agent-skill (MIT). Score honestly: most first-pass profiles land in the 30s and 40s.",
+  "items": [
+    {"id": "headline", "points": 12, "text": true,
+     "full_marks": "Names the target role and specialty in the words recruiters search for, carries one piece of proof (a result, a domain, a known employer), and uses the 220 characters. Not just a job title, not 'Seeking opportunities', not 'Open to work'."},
+    {"id": "about_open", "points": 10, "text": true,
+     "full_marks": "The first two lines (everything before 'see more') say what I do, for what kind of team, with one concrete proof point. No 'passionate about', no 'results-driven', no third-person bio, does not open with my name."},
+    {"id": "about_body", "points": 10, "text": true,
+     "full_marks": "First person. The problems I solve, one or two real numbers, the tools and skills recruiters filter on, the roles I want next and how to reach me. Under 1,400 characters."},
+    {"id": "current_role", "points": 10, "text": true,
+     "full_marks": "One line of scope, then two or three outcome bullets with numbers. Duties are not outcomes."},
+    {"id": "experience_depth", "points": 8, "text": true,
+     "full_marks": "The last two roles are detailed with outcomes; anything older than ten years is one line; gaps are explained in a line rather than left blank."},
+    {"id": "skills", "points": 8, "text": true,
+     "full_marks": "The top three skills are the three I want to be hired for and appear in my target job descriptions; they are endorsed."},
+    {"id": "featured", "points": 8, "text": false,
+     "full_marks": "Three items: my best post, a portfolio piece (case study, dashboard, GitHub, write-up), and my resume or a way to contact me."},
+    {"id": "open_to_work", "points": 6, "text": false,
+     "full_marks": "Open to Work is on (recruiters-only if I am employed) with the exact target titles, locations and work types."},
+    {"id": "photo", "points": 5, "text": false,
+     "full_marks": "A recent photo where my face fills most of the frame and the background is plain."},
+    {"id": "banner", "points": 3, "text": false,
+     "full_marks": "A banner with one line of positioning, not the default gradient or a stock skyline."},
+    {"id": "recommendations", "points": 8, "text": false,
+     "full_marks": "At least three received in the last two years, each naming a specific outcome rather than character."},
+    {"id": "activity", "points": 6, "text": false,
+     "full_marks": "Posted or commented in the last seven days. An empty activity feed reads as an abandoned profile."},
+    {"id": "contact", "points": 6, "text": false,
+     "full_marks": "Custom profile URL, location set, and an email in contact info."}
+  ]
+}
