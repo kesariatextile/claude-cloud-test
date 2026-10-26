@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<title>Kesaria YouTube Banner Mockup</title>
+<!-- Layout mockup for the designer. Canvas = YouTube banner size 2560x1440.
+     Dashed boxes are placeholders for real photos / logo. Add ?guides to the URL to see safe areas. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Mukta:wght@500;700;800&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --kesari: #FF8A1F;
+    --kesari-deep: #E8590C;
+    --maroon: #6E0F1E;
+    --maroon-dark: #3E0712;
+    --gold: #F7C948;
+    --gold-soft: #FFE29A;
+    --cream: #FFF6E5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 2560px; height: 1440px; overflow: hidden; background: var(--maroon-dark); }
+  .canvas {
+    position: relative; width: 2560px; height: 1440px; overflow: hidden;
+    background:
+      radial-gradient(ellipse 900px 520px at 1150px 720px, rgba(255,170,60,.55), transparent 70%),
+      radial-gradient(ellipse 1400px 900px at 1280px 720px, #C2410C 0%, #8E1B1B 55%, var(--maroon-dark) 100%);
+    font-family: "Mukta", sans-serif;
+  }
+  .silk { position: absolute; inset: 0; }
+  .watermark {
+    position: absolute; left: 0; right: 0; top: 70px; text-align: center;
+    font-family: "Baloo 2"; font-weight: 800; font-size: 330px; line-height: 1;
+    color: rgba(255,220,150,.06); letter-spacing: 10px;
+  }
+  .watermark.bottom { top: auto; bottom: 40px; }
+
+  /* Desktop-only decorations (outside the mobile safe area) */
+  .deco { position: absolute; top: 508px; height: 423px; }
+  .deco.left { left: 40px; width: 450px; }
+  .deco.right { right: 30px; width: 460px; }
+
+  /* Mobile safe area: everything important lives here */
+  .safe { position: absolute; left: 507px; top: 508px; width: 1546px; height: 423px; }
+
+  .copy { position: absolute; left: 10px; top: 6px; width: 880px; }
+  .kicker {
+    font-family: "Mukta"; font-weight: 700; font-size: 34px; color: var(--gold-soft);
+    display: flex; align-items: center; gap: 14px; line-height: 1.2;
+  }
+  .kicker::before, .kicker::after { content: ""; height: 3px; width: 46px; background: var(--gold); border-radius: 2px; }
+  .h1 {
+    font-family: "Baloo 2"; font-weight: 800; color: #fff; font-size: 84px; line-height: 1.05;
+    margin-top: 6px; text-shadow: 0 4px 0 rgba(62,7,18,.55);
+  }
+  .h2 {
+    font-family: "Baloo 2"; font-weight: 800; font-size: 112px; line-height: 1.0; margin-top: -2px;
+    color: var(--gold); text-shadow: 0 5px 0 var(--maroon-dark), 0 0 40px rgba(255,170,60,.35);
+  }
+  .h2 .hl {
+    color: var(--maroon); background: linear-gradient(180deg, var(--gold-soft), var(--gold) 60%, #E9A417);
+    padding: 0 18px 4px; border-radius: 18px; text-shadow: none; display: inline-block;
+  }
+  .pill {
+    display: inline-block; margin-top: 16px; padding: 6px 28px 8px; border-radius: 40px;
+    background: var(--cream); color: var(--maroon); font-family: "Mukta"; font-weight: 800; font-size: 32px; line-height: 1.25;
+    box-shadow: 0 4px 0 rgba(62,7,18,.5);
+  }
+  .strip {
+    margin-top: 14px; font-family: "Poppins"; font-weight: 600; font-size: 24px; letter-spacing: 1.5px;
+    color: var(--cream); opacity: .95;
+  }
+  .strip b { color: var(--gold); font-weight: 700; }
+
+  .founder { position: absolute; left: 900px; bottom: 0; width: 400px; height: 423px; }
+  .photo-ph {
+    position: absolute; inset: 0 0 0 0; border: 4px dashed rgba(255,226,154,.85); border-radius: 26px 26px 0 0;
+    background: linear-gradient(180deg, rgba(255,246,229,.10), rgba(255,246,229,.02));
+    overflow: hidden;
+  }
+  .photo-ph svg { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); }
+  .ph-label {
+    position: absolute; left: 0; right: 0; top: 18px; text-align: center; font-family: "Mukta"; font-weight: 700;
+    font-size: 22px; color: var(--gold-soft); line-height: 1.25;
+  }
+  .nameplate {
+    position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); white-space: nowrap;
+    background: linear-gradient(90deg, var(--maroon), #9B1C2C); border: 3px solid var(--gold);
+    border-radius: 14px; padding: 6px 22px 8px; text-align: center; box-shadow: 0 6px 16px rgba(0,0,0,.35);
+  }
+  .nameplate .n { font-family: "Baloo 2"; font-weight: 800; font-size: 36px; color: #fff; line-height: 1.05; }
+  .nameplate .r { font-family: "Poppins"; font-weight: 600; font-size: 16px; letter-spacing: 2px; color: var(--gold-soft); }
+
+  .side { position: absolute; left: 1316px; top: 0; width: 230px; height: 423px;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 8px 0 10px; }
+  .logo-ph {
+    width: 220px; height: 92px; border: 3px dashed rgba(255,226,154,.85); border-radius: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,246,229,.95);
+  }
+  .logo-ph .t1 { font-family: "Poppins"; font-weight: 800; font-size: 26px; color: var(--kesari-deep); letter-spacing: 2px; line-height: 1.05; }
+  .logo-ph .t2 { font-family: "Poppins"; font-weight: 600; font-size: 13px; color: var(--maroon); letter-spacing: 1.6px; }
+  .award {
+    width: 200px; height: 104px; border-radius: 16px; position: relative;
+    background: linear-gradient(160deg, #FFE7A3, var(--gold) 55%, #D99A12); color: var(--maroon);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    box-shadow: 0 4px 0 rgba(62,7,18,.55); padding: 4px 10px;
+  }
+  .award .s { font-size: 26px; line-height: 1; }
+  .award .a { font-family: "Mukta"; font-weight: 800; font-size: 22px; line-height: 1.1; }
+  .award .y { font-family: "Poppins"; font-weight: 700; font-size: 14px; letter-spacing: 1px; }
+  .phone {
+    font-family: "Poppins"; font-weight: 700; font-size: 18px; color: #fff; background: rgba(62,7,18,.7);
+    border: 2px solid var(--gold); border-radius: 30px; padding: 4px 14px; white-space: nowrap;
+  }
+
+  /* guides (enable with ?guides) */
+  .guides { display: none; }
+  .show-guides .guides { display: block; }
+  .g { position: absolute; border: 4px dashed; pointer-events: none; }
+  .g span { position: absolute; left: 10px; top: 4px; font: 700 26px "Poppins"; padding: 2px 10px; }
+  .g.tv { inset: 0; border-color: #ffffff; }
+  .g.tv span { background: #fff; color: #000; }
+  .g.desk { left: 0; top: 508px; width: 2560px; height: 423px; border-color: #00E5FF; }
+  .g.desk span { background: #00E5FF; color: #000; top: -44px; }
+  .g.tab { left: 352px; top: 508px; width: 1855px; height: 423px; border-color: #7CFF6B; }
+  .g.tab span { background: #7CFF6B; color: #000; top: auto; bottom: -44px; }
+  .g.mob { left: 507px; top: 508px; width: 1546px; height: 423px; border-color: #FF3D7F; border-style: solid; }
+  .g.mob span { background: #FF3D7F; color: #fff; left: auto; right: 10px; top: auto; bottom: -44px; }
+</style>
+</head>
+<body>
+<div class="canvas" id="canvas">
+  <svg class="silk" width="2560" height="1440" viewBox="0 0 2560 1440" aria-hidden="true">
+    <g fill="none" stroke="#FFD27A" stroke-width="3">
+      <path opacity=".16" d="M0 300 C 500 180, 900 460, 1400 300 S 2200 160, 2560 320"/>
+      <path opacity=".10" d="M0 360 C 520 240, 920 520, 1420 360 S 2220 220, 2560 380"/>
+      <path opacity=".08" d="M0 1080 C 600 960, 1000 1240, 1500 1080 S 2250 960, 2560 1120"/>
+      <path opacity=".13" d="M0 1150 C 620 1030, 1020 1310, 1520 1150 S 2270 1030, 2560 1190"/>
+    </g>
+    <!-- gold border lines that frame the visible band on desktop -->
+    <rect x="0" y="508" width="2560" height="6" fill="#F7C948" opacity=".0"/>
+  </svg>
+  <div class="watermark">केसरिया</div>
+  <div class="watermark bottom">KESARIA</div>
+
+  <!-- LEFT (desktop only): saree stacks = manufacturer / wholesale stock -->
+  <div class="deco left">
+    <svg width="450" height="423" viewBox="0 0 450 423" aria-hidden="true">
+      <defs>
+        <linearGradient id="shelf" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5A0C18"/><stop offset="1" stop-color="#2E050C"/></linearGradient>
+      </defs>
+      <g id="stackA" transform="translate(20,95)">
+        <rect x="0" y="0"   width="190" height="34" rx="6" fill="#D81B60"/><rect x="0" y="26" width="190" height="6" fill="#F7C948"/>
+        <rect x="0" y="36"  width="190" height="34" rx="6" fill="#2E7D32"/><rect x="0" y="62" width="190" height="6" fill="#F7C948"/>
+        <rect x="0" y="72"  width="190" height="34" rx="6" fill="#1565C0"/><rect x="0" y="98" width="190" height="6" fill="#FFE29A"/>
+        <rect x="0" y="108" width="190" height="34" rx="6" fill="#F57C00"/><rect x="0" y="134" width="190" height="6" fill="#6E0F1E"/>
+        <rect x="0" y="144" width="190" height="34" rx="6" fill="#7B1FA2"/><rect x="0" y="170" width="190" height="6" fill="#F7C948"/>
+        <rect x="0" y="180" width="190" height="34" rx="6" fill="#C62828"/><rect x="0" y="206" width="190" height="6" fill="#F7C948"/>
+        <rect x="0" y="216" width="190" height="34" rx="6" fill="#00897B"/><rect x="0" y="242" width="190" height="6" fill="#FFE29A"/>
+        <rect x="0" y="252" width="190" height="34" rx="6" fill="#FBC02D"/><rect x="0" y="278" width="190" height="6" fill="#6E0F1E"/>
+      </g>
+      <g transform="translate(225,60)">
+        <rect x="0" y="0"   width="190" height="34" rx="6" fill="#F57C00"/><rect x="0" y="26" width="190" height="6" fill="#6E0F1E"/>
+        <rect x="0" y="36"  width="190" height="34" rx="6" fill="#AD1457"/><rect x="0" y="62" width="190" height="6" fill="#F7C948"/>
+        <rect x="0" y="72"  width="190" height="34" rx="6" fill="#283593"/><rect x="0" y="98" width="190" height="6" fill="#F7C948"/>
+        <rect x="0" y="108" width="190" height="34" rx="6" fill="#43A047"/><rect x="0" y="134" width="190" height="6" fill="#FFE29A"/>
+        <rect x="0" y="144" width="190" height="34" rx="6" fill="#E53935"/><rect x="0" y="170" width="190" height="6" fill="#F7C948"/>
+        <rect x="0" y="180" width="190" height="34" rx="6" fill="#FFB300"/><rect x="0" y="206" width="190" height="6" fill="#6E0F1E"/>
+        <rect x="0" y="216" width="190" height="34" rx="6" fill="#6A1B9A"/><rect x="0" y="242" width="190" height="6" fill="#F7C948"/>
+        <rect x="0" y="252" width="190" height="34" rx="6" fill="#00838F"/><rect x="0" y="278" width="190" height="6" fill="#FFE29A"/>
+        <rect x="0" y="288" width="190" height="34" rx="6" fill="#D81B60"/><rect x="0" y="314" width="190" height="6" fill="#F7C948"/>
+      </g>
+      <rect x="0" y="385" width="450" height="38" fill="url(#shelf)"/>
+      <rect x="0" y="385" width="450" height="5" fill="#F7C948"/>
+      <text x="225" y="34" text-anchor="middle" font-family="Mukta" font-weight="700" font-size="22" fill="#FFE29A">[फ़ोटो: फैक्ट्री/गोडाउन – साड़ी के स्टैक]</text>
+    </svg>
+  </div>
+
+  <!-- RIGHT (desktop only): Kesaria Bazaar franchise store -->
+  <div class="deco right">
+    <svg width="460" height="423" viewBox="0 0 460 423" aria-hidden="true">
+      <rect x="20" y="40" width="420" height="383" fill="#FFF6E5"/>
+      <rect x="20" y="40" width="420" height="78" fill="#6E0F1E"/>
+      <rect x="20" y="114" width="420" height="6" fill="#F7C948"/>
+      <text x="230" y="90" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="34" fill="#F7C948" letter-spacing="2">KESARIA BAZAAR</text>
+      <g fill="#E8590C">
+        <path d="M20 120 h42 v24 a21 21 0 0 1 -42 0z"/><path d="M104 120 h42 v24 a21 21 0 0 1 -42 0z"/>
+        <path d="M188 120 h42 v24 a21 21 0 0 1 -42 0z"/><path d="M272 120 h42 v24 a21 21 0 0 1 -42 0z"/>
+        <path d="M356 120 h42 v24 a21 21 0 0 1 -42 0z"/>
+      </g>
+      <g fill="#FF8A1F">
+        <path d="M62 120 h42 v24 a21 21 0 0 1 -42 0z"/><path d="M146 120 h42 v24 a21 21 0 0 1 -42 0z"/>
+        <path d="M230 120 h42 v24 a21 21 0 0 1 -42 0z"/><path d="M314 120 h42 v24 a21 21 0 0 1 -42 0z"/>
+        <path d="M398 120 h42 v24 a21 21 0 0 1 -42 0z"/>
+      </g>
+      <rect x="44" y="180" width="170" height="243" fill="#FDE7C4" stroke="#B8860B" stroke-width="4"/>
+      <rect x="246" y="180" width="170" height="243" fill="#FDE7C4" stroke="#B8860B" stroke-width="4"/>
+      <!-- mannequins in lehenga / saree -->
+      <g transform="translate(129,200)"><circle cx="0" cy="18" r="14" fill="#C9A27E"/><path d="M-22 36 h44 l8 70 h-60z" fill="#C2185B"/><path d="M-30 106 h60 l26 115 h-112z" fill="#D81B60"/><path d="M-30 106 h60 l26 115 h-112z" fill="none" stroke="#F7C948" stroke-width="5"/></g>
+      <g transform="translate(331,200)"><circle cx="0" cy="18" r="14" fill="#C9A27E"/><path d="M-22 36 h44 l8 70 h-60z" fill="#2E7D32"/><path d="M-30 106 h60 l26 115 h-112z" fill="#388E3C"/><path d="M-30 106 h60 l26 115 h-112z" fill="none" stroke="#F7C948" stroke-width="5"/></g>
+      <text x="230" y="30" text-anchor="middle" font-family="Mukta" font-weight="700" font-size="22" fill="#FFE29A">[फ़ोटो: असली केसरिया बाज़ार स्टोर]</text>
+    </svg>
+  </div>
+
+  <!-- MOBILE SAFE AREA 1546x423 -->
+  <div class="safe">
+    <div class="copy">
+      <div class="kicker">सूरत की फैक्ट्री से, सीधा आपकी दुकान तक</div>
+      <div class="h1">अब आपके व्यापार पर</div>
+      <div class="h2">चढ़ेगा <span class="hl">केसरिया</span> रंग</div>
+      <div class="pill">साड़ी • कुर्ती • सूट • लहंगा • ड्रेस मटेरियल</div>
+      <div class="strip"><b>MANUFACTURER &amp; WHOLESALER</b> &nbsp;|&nbsp; SURAT &nbsp;|&nbsp; SINCE 1977</div>
+    </div>
+
+    <div class="founder">
+      <div class="photo-ph">
+        <div class="ph-label">[ रितेश मोदी जी की कटआउट फ़ोटो ]<br>मुस्कुराते हुए • सफ़ेद/केसरिया कुर्ता</div>
+        <svg width="360" height="360" viewBox="0 0 360 360" aria-hidden="true">
+          <defs><linearGradient id="kurta" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#FFF6E5"/><stop offset="1" stop-color="#F3DDB5"/></linearGradient></defs>
+          <circle cx="180" cy="120" r="62" fill="#E7C2A0" opacity=".9"/>
+          <path d="M40 360 C 46 240, 110 200, 180 200 S 314 240, 320 360 Z" fill="url(#kurta)" opacity=".92"/>
+          <path d="M180 200 v90" stroke="#E8590C" stroke-width="4"/>
+        </svg>
+      </div>
+      <div class="nameplate"><div class="n">रितेश मोदी</div><div class="r">FOUNDER &amp; CEO</div></div>
+    </div>
+
+    <div class="side">
+      <div class="logo-ph"><div class="t1">KESARIA</div><div class="t2">TEXTILE COMPANY</div></div>
+      <div class="award"><div class="s">🏆</div><div class="a">Zee महासम्मान</div><div class="y">AWARD 2026</div></div>
+      <div class="award"><div class="s">🏆</div><div class="a">मेक इन इंडिया</div><div class="y">AWARD 2026</div></div>
+      <div class="phone">📞 +91 XXXXX XXXXX</div>
+    </div>
+  </div>
+
+  <div class="guides">
+    <div class="g tv"><span>TV: 2560 × 1440 (pura image)</span></div>
+    <div class="g desk"><span>DESKTOP: 2560 × 423</span></div>
+    <div class="g tab"><span>TABLET: 1855 × 423</span></div>
+    <div class="g mob"><span>MOBILE / SAFE AREA: 1546 × 423 — sab zaroori cheez yahin</span></div>
+  </div>
+</div>
+<script>
+  if (location.search.includes('guides')) document.getElementById('canvas').classList.add('show-guides');
+</script>
+</body>
+</html>
