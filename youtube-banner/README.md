@@ -2,6 +2,29 @@
 
 Competitors ke 4 banners padhkar Kesaria Textile Company ke liye banaya gaya content + designer brief.
 
+## ✅ FINAL (user ki pasand) — Ajmera Fashion style
+
+Mockup: `banner-ajmera-style.html` → `ajmera-style-desktop-2560x423.png`, `ajmera-style-mobile-1546x423.png`, `ajmera-style-guide.png`
+
+| Ajmera Fashion | Kesaria (same jagah, same style) |
+|---|---|
+| हर छोटा व्यापारी | **हर छोटी दुकान** |
+| यहाँ बड़ा बनता है | **यहाँ ब्रांड बनती है** |
+| जहां फ़िक्र नहीं, व्यापार शुरू होता है | **फैक्ट्री का माल, होलसेल का दाम** |
+| नाम तो सुना ही होगा – अजमेरा फैशन (pill) | **भरोसे का नाम – केसरिया टेक्सटाइल** (pill) |
+| INDIA'S NO.1 TEXTILE MANUFACTURER & WHOLESALER | **SURAT'S TRUSTED TEXTILE MANUFACTURER & WHOLESALER** |
+| TRUSTED BY 1 LAKH+ BUSINESSES \| SINCE 1992 | **ZEE MAHASANMAN 2026 AWARD \| SINCE 1977** *(saal confirm karo)* |
+
+**Layout (Ajmera jaisa):** left mein khush dukandaar + saree stack → beech mein text → center-right Ritesh Modi ji (white kurta, muskurate hue, kamar tak cutout) → right mein Kesaria Bazaar store + doosra dukandaar (haath mein saree stack) → peeche asli vyapariyon/customers ki photos ka faded collage.
+**Rang:** Ajmera ka magenta ki jagah Kesaria ka kesari-maroon-gold (chaho to magenta bhi kar sakte hain).
+
+**Headline ke aur options (isi style mein):**
+- हर छोटा व्यापारी / **यहाँ ब्रांड बनता है**
+- हर दुकानदार का सपना / **यहाँ सच होता है**
+- सूरत की फैक्ट्री से / **आपकी दुकान तक**
+
+---
+
 Files:
 - `banner-mockup.html` — layout mockup (2560×1440). Browser mein `?guides` lagakar kholo to safe area dikhega.
 - `kesaria-banner-2560x1440.png` — pura mockup
